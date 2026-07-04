@@ -15,11 +15,12 @@ except FileNotFoundError:
     st.stop()
 
 # =========================
-# CLEAN DATA
+# CLEAN DATA (SAFE VERSION)
 # =========================
 df['Opening_Rank'] = pd.to_numeric(df['Opening_Rank'], errors='coerce')
 df['Closing_Rank'] = pd.to_numeric(df['Closing_Rank'], errors='coerce')
 
+# Only drop critical missing fields (NOT ranks)
 df = df.dropna(subset=['Year', 'Institute', 'Seat_Type'])
 
 # =========================
@@ -61,7 +62,7 @@ filtered_df = df[
     (df['Gender'].isin(gender_options))
 ]
 
-st.write("Filtered rows:", len(filtered_df))
+st.write("Filtered rows:", len(filtered_df))  # DEBUG HELPER
 
 # =========================
 # TABS
@@ -73,7 +74,7 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 # =========================
-# TAB 1
+# TAB 1 - OVERALL ANALYSIS
 # =========================
 with tab1:
     st.header("Overall Analysis")
@@ -82,39 +83,23 @@ with tab1:
         st.warning("No data available for selected filters.")
     else:
 
-        # 🔴 Programs per institute (RED gradient)
+        # Programs per institute
         programs = filtered_df.groupby('Institute')['Academic_Program_Name'].nunique()
-        fig = px.bar(
-            programs,
-            title="Number of Programs per Institute",
-            color=programs.values,
-            color_continuous_scale="Reds"
-        )
+        fig = px.bar(programs, title="Number of Programs per Institute")
         st.plotly_chart(fig, use_container_width=True)
 
-        # 🔴 Seat distribution (RED gradient)
+        # Seat distribution
         seats = filtered_df.groupby('Institute')['Seat_Type'].count()
-        fig = px.bar(
-            seats,
-            title="Seat Distribution Across Institutes",
-            color=seats.values,
-            color_continuous_scale="Reds"
-        )
+        fig = px.bar(seats, title="Seat Distribution Across Institutes")
         st.plotly_chart(fig, use_container_width=True)
 
-        # 🔵 + 🔴 Gender distribution (RED dominant, blue accent)
+        # Gender distribution
         gender = filtered_df['Gender'].value_counts()
-        fig = px.pie(
-            values=gender.values,
-            names=gender.index,
-            title="Gender Distribution",
-            color_discrete_sequence=["#FF4C4C", "#1f77b4"]  # red + blue accent
-        )
+        fig = px.pie(values=gender.values, names=gender.index,
+                     title="Gender Distribution")
         st.plotly_chart(fig, use_container_width=True)
 
-        # =========================
-        # Trend: seat intake (BLUE + RED contrast)
-        # =========================
+        # Trend: seat intake
         seat_year = filtered_df.groupby('Year')['Seat_Type'].count().reset_index()
 
         model = LinearRegression()
@@ -124,39 +109,17 @@ with tab1:
         pred = model.predict(X)
 
         fig = go.Figure()
-
-        # 🔴 actual data
-        fig.add_trace(go.Scatter(
-            x=seat_year['Year'],
-            y=y,
-            mode='markers',
-            name='Actual',
-            marker=dict(color='red')
-        ))
-
-        # 🔵 trend line (blue accent)
-        fig.add_trace(go.Scatter(
-            x=seat_year['Year'],
-            y=pred,
-            mode='lines',
-            name='Trend',
-            line=dict(color='blue')
-        ))
-
+        fig.add_trace(go.Scatter(x=seat_year['Year'], y=y,
+                                 mode='markers', name='Actual'))
+        fig.add_trace(go.Scatter(x=seat_year['Year'], y=pred,
+                                 mode='lines', name='Trend'))
         st.plotly_chart(fig, use_container_width=True)
 
-        # 🔵 + 🔴 Closing rank trend (blue line for clarity)
+        # Closing rank trend
         rank_year = filtered_df.groupby('Year')['Closing_Rank'].mean().reset_index()
 
-        fig = px.line(
-            rank_year,
-            x='Year',
-            y='Closing_Rank',
-            title="Average Closing Rank Trend",
-            markers=True
-        )
-
-        fig.update_traces(line=dict(color="blue"))  # blue accent line
+        fig = px.line(rank_year, x='Year', y='Closing_Rank',
+                      title="Average Closing Rank Trend")
         st.plotly_chart(fig, use_container_width=True)
 
         # Download
@@ -164,22 +127,17 @@ with tab1:
         st.download_button("Download Filtered Data", csv, "filtered_data.csv")
 
 # =========================
-# TAB 2
+# TAB 2 - PROGRAM ANALYSIS
 # =========================
 with tab2:
     st.header("Program-Specific Analysis")
 
     if not filtered_df.empty:
 
-        program = st.selectbox(
-            "Select Program",
-            filtered_df['Academic_Program_Name'].dropna().unique()
-        )
-
-        institute = st.selectbox(
-            "Select Institute",
-            filtered_df['Institute'].dropna().unique()
-        )
+        program = st.selectbox("Select Program",
+                               filtered_df['Academic_Program_Name'].dropna().unique())
+        institute = st.selectbox("Select Institute",
+                                  filtered_df['Institute'].dropna().unique())
 
         data = filtered_df[
             (filtered_df['Academic_Program_Name'] == program) &
@@ -189,24 +147,16 @@ with tab2:
         if data.empty:
             st.warning("No data for selection.")
         else:
-
             open_rank = data.groupby('Year')['Opening_Rank'].mean().reset_index()
             close_rank = data.groupby('Year')['Closing_Rank'].mean().reset_index()
 
-            fig = px.line(open_rank, x='Year', y='Opening_Rank',
-                          title="Opening Rank Trend",
-                          markers=True)
-            fig.update_traces(line=dict(color="red"))
-            st.plotly_chart(fig, use_container_width=True)
-
-            fig = px.line(close_rank, x='Year', y='Closing_Rank',
-                          title="Closing Rank Trend",
-                          markers=True)
-            fig.update_traces(line=dict(color="blue"))  # blue contrast
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(px.line(open_rank, x='Year', y='Opening_Rank',
+                                    title="Opening Rank Trend"))
+            st.plotly_chart(px.line(close_rank, x='Year', y='Closing_Rank',
+                                    title="Closing Rank Trend"))
 
 # =========================
-# TAB 3
+# TAB 3 - COMPARISON
 # =========================
 with tab3:
     st.header("Multiple Institute Comparison")
@@ -229,13 +179,6 @@ with tab3:
     if not comp.empty:
         st.dataframe(comp.head(top_n))
 
-        fig = px.bar(
-            comp.head(top_n),
-            x=comp.columns[0],
-            y='avg_open',
-            title="Top Comparison",
-            color='avg_open',
-            color_continuous_scale="Reds"  # still red dominant
-        )
-
+        fig = px.bar(comp.head(top_n), x=comp.columns[0], y='avg_open',
+                     title="Top Comparison")
         st.plotly_chart(fig, use_container_width=True)
