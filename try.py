@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from sklearn.linear_model import LinearRegression
 import plotly.graph_objects as go
+st.write(os.listdir())
 
 # Load the dataset
 df = pd.read_csv("JEE_Rank_2016_2024.csv")
