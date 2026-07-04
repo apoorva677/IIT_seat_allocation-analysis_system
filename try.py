@@ -83,31 +83,33 @@ with tab1:
         st.warning("No data available for selected filters.")
     else:
 
-        # Programs per institute (RED)
+        # Programs per institute (GRADIENT RED)
         programs = filtered_df.groupby('Institute')['Academic_Program_Name'].nunique()
         fig = px.bar(
             programs,
             title="Number of Programs per Institute",
-            color_discrete_sequence=["red"]
+            color=programs.values,
+            color_continuous_scale="Reds"
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Seat distribution (RED)
+        # Seat distribution (GRADIENT RED)
         seats = filtered_df.groupby('Institute')['Seat_Type'].count()
         fig = px.bar(
             seats,
             title="Seat Distribution Across Institutes",
-            color_discrete_sequence=["red"]
+            color=seats.values,
+            color_continuous_scale="Reds"
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Gender distribution (RED)
+        # Gender distribution (GRADIENT RED)
         gender = filtered_df['Gender'].value_counts()
         fig = px.pie(
             values=gender.values,
             names=gender.index,
             title="Gender Distribution",
-            color_discrete_sequence=["red", "darkred"]
+            color_discrete_sequence=["#8B0000", "#FF4C4C"]
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -137,7 +139,7 @@ with tab1:
         ))
         st.plotly_chart(fig, use_container_width=True)
 
-        # Closing rank trend (RED)
+        # Closing rank trend (RED LINE)
         rank_year = filtered_df.groupby('Year')['Closing_Rank'].mean().reset_index()
 
         fig = px.line(
@@ -225,6 +227,7 @@ with tab3:
             x=comp.columns[0],
             y='avg_open',
             title="Top Comparison",
-            color_discrete_sequence=["red"]
+            color='avg_open',
+            color_continuous_scale="Reds"
         )
         st.plotly_chart(fig, use_container_width=True)
