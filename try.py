@@ -15,12 +15,11 @@ except FileNotFoundError:
     st.stop()
 
 # =========================
-# CLEAN DATA (SAFE VERSION)
+# CLEAN DATA
 # =========================
 df['Opening_Rank'] = pd.to_numeric(df['Opening_Rank'], errors='coerce')
 df['Closing_Rank'] = pd.to_numeric(df['Closing_Rank'], errors='coerce')
 
-# Only drop critical missing fields (NOT ranks)
 df = df.dropna(subset=['Year', 'Institute', 'Seat_Type'])
 
 # =========================
@@ -65,10 +64,11 @@ filtered_df = df[
 st.write("Filtered rows:", len(filtered_df))
 
 # =========================
-# COLORS (CUSTOM STYLE)
+# BLUE PALETTE (CUSTOM)
 # =========================
-DARK_BLUE = "#0B1F3A"   # darker blue (professional)
-RED = "#FF3B30"
+BLUE_GRADIENT = px.colors.sequential.Blues
+DARK_BLUE = "#0B2D5C"
+MID_BLUE = "#1F4E79"
 
 # =========================
 # TABS
@@ -89,38 +89,38 @@ with tab1:
         st.warning("No data available for selected filters.")
     else:
 
-        # Programs per institute (RED gradient)
+        # Programs per institute (BLUE GRADIENT)
         programs = filtered_df.groupby('Institute')['Academic_Program_Name'].nunique()
         fig = px.bar(
             programs,
             title="Number of Programs per Institute",
             color=programs.values,
-            color_continuous_scale="Reds"
+            color_continuous_scale=BLUE_GRADIENT
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Seat distribution (RED gradient)
+        # Seat distribution (BLUE GRADIENT)
         seats = filtered_df.groupby('Institute')['Seat_Type'].count()
         fig = px.bar(
             seats,
             title="Seat Distribution Across Institutes",
             color=seats.values,
-            color_continuous_scale="Reds"
+            color_continuous_scale=BLUE_GRADIENT
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Gender distribution (DARK BLUE accent)
+        # Gender distribution (dark blue tones)
         gender = filtered_df['Gender'].value_counts()
         fig = px.pie(
             values=gender.values,
             names=gender.index,
             title="Gender Distribution",
-            color_discrete_sequence=[DARK_BLUE, RED]  # darker blue + red
+            color_discrete_sequence=[DARK_BLUE, MID_BLUE]
         )
         st.plotly_chart(fig, use_container_width=True)
 
         # =========================
-        # Trend: seat intake (GRADIENT LINE preserved)
+        # Trend: seat intake (BLUE LINE + GRADIENT VISUAL FEEL)
         # =========================
         seat_year = filtered_df.groupby('Year')['Seat_Type'].count().reset_index()
 
@@ -132,27 +132,27 @@ with tab1:
 
         fig = go.Figure()
 
-        # Actual (RED)
         fig.add_trace(go.Scatter(
             x=seat_year['Year'],
             y=y,
             mode='markers',
             name='Actual',
-            marker=dict(color=RED)
+            marker=dict(color=DARK_BLUE)
         ))
 
-        # Trend (DARK BLUE)
         fig.add_trace(go.Scatter(
             x=seat_year['Year'],
             y=pred,
             mode='lines',
             name='Trend',
-            line=dict(color=DARK_BLUE)
+            line=dict(color=MID_BLUE)
         ))
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Closing rank trend (DARK BLUE line, keeps contrast clean)
+        # =========================
+        # Closing rank trend (BLUE LINE)
+        # =========================
         rank_year = filtered_df.groupby('Year')['Closing_Rank'].mean().reset_index()
 
         fig = px.line(
@@ -163,7 +163,8 @@ with tab1:
             markers=True
         )
 
-        fig.update_traces(line=dict(color=DARK_BLUE))
+        # soft blue gradient-like effect
+        fig.update_traces(line=dict(color=MID_BLUE))
         st.plotly_chart(fig, use_container_width=True)
 
         # Download
@@ -178,10 +179,15 @@ with tab2:
 
     if not filtered_df.empty:
 
-        program = st.selectbox("Select Program",
-                               filtered_df['Academic_Program_Name'].dropna().unique())
-        institute = st.selectbox("Select Institute",
-                                  filtered_df['Institute'].dropna().unique())
+        program = st.selectbox(
+            "Select Program",
+            filtered_df['Academic_Program_Name'].dropna().unique()
+        )
+
+        institute = st.selectbox(
+            "Select Institute",
+            filtered_df['Institute'].dropna().unique()
+        )
 
         data = filtered_df[
             (filtered_df['Academic_Program_Name'] == program) &
@@ -191,21 +197,20 @@ with tab2:
         if data.empty:
             st.warning("No data for selection.")
         else:
+
             open_rank = data.groupby('Year')['Opening_Rank'].mean().reset_index()
             close_rank = data.groupby('Year')['Closing_Rank'].mean().reset_index()
 
-            # OPENING (RED)
             fig = px.line(open_rank, x='Year', y='Opening_Rank',
                           title="Opening Rank Trend",
                           markers=True)
-            fig.update_traces(line=dict(color=RED))
+            fig.update_traces(line=dict(color=DARK_BLUE))
             st.plotly_chart(fig, use_container_width=True)
 
-            # CLOSING (DARK BLUE gradient feel preserved)
             fig = px.line(close_rank, x='Year', y='Closing_Rank',
                           title="Closing Rank Trend",
                           markers=True)
-            fig.update_traces(line=dict(color=DARK_BLUE))
+            fig.update_traces(line=dict(color=MID_BLUE))
             st.plotly_chart(fig, use_container_width=True)
 
 # =========================
@@ -238,7 +243,7 @@ with tab3:
             y='avg_open',
             title="Top Comparison",
             color='avg_open',
-            color_continuous_scale="Reds"
+            color_continuous_scale=BLUE_GRADIENT
         )
 
         st.plotly_chart(fig, use_container_width=True)
