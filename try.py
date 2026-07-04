@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 
 # Load the dataset
 data_path = r"C:\Users\anith\Desktop\zenith\python\JEE_Rank_2016_2024.csv"
-df = pd.read_csv(data_path)
+df = pd.read_csv(JEE_Rank_2016_2024.csv)
 df.dropna(inplace=True)
 df['Opening_Rank'] = pd.to_numeric(df['Opening_Rank'], errors='coerce')
 df['Closing_Rank'] = pd.to_numeric(df['Closing_Rank'], errors='coerce')
