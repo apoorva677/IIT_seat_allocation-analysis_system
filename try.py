@@ -15,12 +15,11 @@ except FileNotFoundError:
     st.stop()
 
 # =========================
-# CLEAN DATA (SAFE VERSION)
+# CLEAN DATA
 # =========================
 df['Opening_Rank'] = pd.to_numeric(df['Opening_Rank'], errors='coerce')
 df['Closing_Rank'] = pd.to_numeric(df['Closing_Rank'], errors='coerce')
 
-# Only drop critical missing fields (NOT ranks)
 df = df.dropna(subset=['Year', 'Institute', 'Seat_Type'])
 
 # =========================
@@ -62,7 +61,7 @@ filtered_df = df[
     (df['Gender'].isin(gender_options))
 ]
 
-st.write("Filtered rows:", len(filtered_df))  # DEBUG HELPER
+st.write("Filtered rows:", len(filtered_df))
 
 # =========================
 # TABS
@@ -74,7 +73,7 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 # =========================
-# TAB 1 - OVERALL ANALYSIS
+# TAB 1
 # =========================
 with tab1:
     st.header("Overall Analysis")
@@ -83,7 +82,7 @@ with tab1:
         st.warning("No data available for selected filters.")
     else:
 
-        # Programs per institute (GRADIENT RED)
+        # 🔴 Programs per institute (RED gradient)
         programs = filtered_df.groupby('Institute')['Academic_Program_Name'].nunique()
         fig = px.bar(
             programs,
@@ -93,7 +92,7 @@ with tab1:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Seat distribution (GRADIENT RED)
+        # 🔴 Seat distribution (RED gradient)
         seats = filtered_df.groupby('Institute')['Seat_Type'].count()
         fig = px.bar(
             seats,
@@ -103,17 +102,19 @@ with tab1:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Gender distribution (GRADIENT RED)
+        # 🔵 + 🔴 Gender distribution (RED dominant, blue accent)
         gender = filtered_df['Gender'].value_counts()
         fig = px.pie(
             values=gender.values,
             names=gender.index,
             title="Gender Distribution",
-            color_discrete_sequence=["#8B0000", "#FF4C4C"]
+            color_discrete_sequence=["#FF4C4C", "#1f77b4"]  # red + blue accent
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Trend: seat intake (RED line)
+        # =========================
+        # Trend: seat intake (BLUE + RED contrast)
+        # =========================
         seat_year = filtered_df.groupby('Year')['Seat_Type'].count().reset_index()
 
         model = LinearRegression()
@@ -123,6 +124,8 @@ with tab1:
         pred = model.predict(X)
 
         fig = go.Figure()
+
+        # 🔴 actual data
         fig.add_trace(go.Scatter(
             x=seat_year['Year'],
             y=y,
@@ -130,16 +133,19 @@ with tab1:
             name='Actual',
             marker=dict(color='red')
         ))
+
+        # 🔵 trend line (blue accent)
         fig.add_trace(go.Scatter(
             x=seat_year['Year'],
             y=pred,
             mode='lines',
             name='Trend',
-            line=dict(color='red')
+            line=dict(color='blue')
         ))
+
         st.plotly_chart(fig, use_container_width=True)
 
-        # Closing rank trend (RED LINE)
+        # 🔵 + 🔴 Closing rank trend (blue line for clarity)
         rank_year = filtered_df.groupby('Year')['Closing_Rank'].mean().reset_index()
 
         fig = px.line(
@@ -149,7 +155,8 @@ with tab1:
             title="Average Closing Rank Trend",
             markers=True
         )
-        fig.update_traces(line=dict(color="red"))
+
+        fig.update_traces(line=dict(color="blue"))  # blue accent line
         st.plotly_chart(fig, use_container_width=True)
 
         # Download
@@ -157,7 +164,7 @@ with tab1:
         st.download_button("Download Filtered Data", csv, "filtered_data.csv")
 
 # =========================
-# TAB 2 - PROGRAM ANALYSIS
+# TAB 2
 # =========================
 with tab2:
     st.header("Program-Specific Analysis")
@@ -195,11 +202,11 @@ with tab2:
             fig = px.line(close_rank, x='Year', y='Closing_Rank',
                           title="Closing Rank Trend",
                           markers=True)
-            fig.update_traces(line=dict(color="red"))
+            fig.update_traces(line=dict(color="blue"))  # blue contrast
             st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# TAB 3 - COMPARISON
+# TAB 3
 # =========================
 with tab3:
     st.header("Multiple Institute Comparison")
@@ -228,6 +235,7 @@ with tab3:
             y='avg_open',
             title="Top Comparison",
             color='avg_open',
-            color_continuous_scale="Reds"
+            color_continuous_scale="Reds"  # still red dominant
         )
+
         st.plotly_chart(fig, use_container_width=True)
